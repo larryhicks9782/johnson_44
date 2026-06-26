@@ -1,0 +1,72 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Represents a user's public profile in the community",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The firebase auth UID" },
+        "name": { "type": "string", "description": "Full display name" },
+        "email": { "type": "string", "description": "User email address" },
+        "avatar": { "type": "string", "description": "URL to the profile avatar" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Registration ISO timestamp" }
+      },
+      "required": ["id", "name", "email", "avatar"]
+    },
+    "Gathering": {
+      "title": "Gathering",
+      "description": "A scheduled community gathering or event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "location": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "hostId": { "type": "string" },
+        "hostName": { "type": "string" },
+        "hostAvatar": { "type": "string" },
+        "image": { "type": "string" },
+        "attendeeIds": { "type": "array" },
+        "maybeIds": { "type": "array" },
+        "tags": { "type": "array" },
+        "capacity": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "description", "category", "location", "date", "time", "hostId", "hostName", "hostAvatar", "image", "attendeeIds", "maybeIds"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "A message left by an attendee inside a gathering's board",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "gatheringId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userAvatar": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "gatheringId", "userId", "userName", "userAvatar", "text", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles keyed by Firebase Auth UID"
+    },
+    "gatherings/{gatheringId}": {
+      "schema": "Gathering",
+      "description": "Community gatherings with interactive status"
+    },
+    "gatherings/{gatheringId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "A comment left on a specific gathering"
+    }
+  }
+}

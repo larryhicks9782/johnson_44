@@ -1,0 +1,42 @@
+plugins {
+    id 'java'
+    id 'com.github.node-gradle.node'
+}
+
+group = 'com.gcommunity'
+version = '1.0.0'
+description = 'GCommunity AI Studio App'
+
+repositories {
+    mavenCentral()
+}
+
+node {
+    version = '20.11.0'
+    npmVersion = '10.2.4'
+    download = true
+}
+
+tasks.register('buildApp', com.github.gradle.node.npm.task.NpmTask) {
+    dependsOn 'npmInstall'
+    args = ['run', 'build']
+}
+
+tasks.register('devServer', com.github.gradle.node.npm.task.NpmTask) {
+    dependsOn 'npmInstall'
+    args = ['run', 'dev']
+}
+
+tasks.register('lintCode', com.github.gradle.node.npm.task.NpmTask) {
+    dependsOn 'npmInstall'
+    args = ['run', 'lint']
+}
+
+tasks.register('cleanDist', com.github.gradle.node.npm.task.NpmTask) {
+    args = ['run', 'clean']
+}
+
+tasks.named('build') {
+    dependsOn 'buildApp'
+}
+
