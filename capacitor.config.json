@@ -1,0 +1,30 @@
+{
+  "appId": "com.gcommunity.app",
+  "appName": "GCommunity",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "automatic"
+  },
+  "android": {
+    "buildOptions": {
+      "releaseType": "AAB"
+    }
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "androidSpinnerStyle": "large",
+      "backgroundColor": "#f5f5f0"
+    },
+    "Camera": {
+      "permissions": ["camera"]
+    },
+    "Geolocation": {
+      "permissions": ["coarseLocation", "fineLocation"]
+    },
+    "Toast": {}
+  }
+}

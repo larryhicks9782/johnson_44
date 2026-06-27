@@ -1,7 +1,12 @@
 {
-  "name": "react-example",
-  "private": true,
-  "version": "0.0.0",
+  "name": "gcommunity-app",
+  "private": false,
+  "version": "1.0.0",
+  "displayName": "GCommunity",
+  "description": "Discover and host community gatherings near you",
+  "homepage": "https://gcommunity.app",
+  "author": "GCommunity Team",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
