@@ -51,7 +51,6 @@ import {
   BatteryWarning,
   Zap,
   Thermometer,
-  Cpu,
   Activity,
   VideoOff,
   History,
@@ -79,7 +78,6 @@ import {
   ChevronUp,
   ChevronDown,
   Ruler,
-  BarChart3,
   TrendingUp,
   Table,
   Download,
@@ -173,242 +171,18 @@ export interface ScanDayAnalytics {
   timestamps: ScanAnalyticsEvent[];
 }
 
-export const getScanHistoryForGathering = (gatheringId: string): ScanDayAnalytics[] => {
-  const key = `gcommunity_scans_analytics_history_${gatheringId}`;
-  const saved = localStorage.getItem(key);
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch (e) {
-      // fallback
-    }
-  }
-
-  // If no saved history exists, generate realistic 7-day data
-  const total = getQrScansForGathering(gatheringId);
-  const data: ScanDayAnalytics[] = [];
-  const now = new Date();
-  
-  // Distribute total across 7 days with some variation
-  const baseValue = Math.floor(total / 7);
-  let accumulated = 0;
-  
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(now.getDate() - i);
-    const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    const fullDateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
-    
-    let count = baseValue;
-    if (i === 0) {
-      count = total - accumulated;
-      if (count < 0) count = 0;
-    } else {
-      // Add pseudo-randomness
-      const seedNum = parseInt(gatheringId, 10) || 1;
-      const randomOffset = Math.floor(Math.sin(seedNum + i) * (baseValue * 0.4));
-      count = Math.max(1, baseValue + randomOffset);
-      accumulated += count;
-    }
-    
-    // Generate detailed timestamps for this day
-    const timestamps: ScanAnalyticsEvent[] = [];
-    for (let j = 0; j < count; j++) {
-      // Random hours and minutes
-      const scanHour = Math.floor(8 + (j * 12) / count) % 24;
-      const scanMin = Math.floor(Math.sin(j + i) * 30 + 30) % 60;
-      const scanSec = Math.floor(Math.cos(j + i) * 30 + 30) % 60;
-      
-      const scanTime = new Date(d);
-      scanTime.setHours(scanHour, scanMin, scanSec);
-      
-      timestamps.push({
-        timestamp: scanTime.getTime(),
-        dateString: fullDateStr,
-        timeString: scanTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-      });
-    }
-
-    // Sort timestamps ascending
-    timestamps.sort((a, b) => a.timestamp - b.timestamp);
-
-    data.push({
-      date: dateStr,
-      fullDate: fullDateStr,
-      count,
-      timestamps
-    });
-  }
-
-  localStorage.setItem(key, JSON.stringify(data));
-  return data;
-};
-
-export const getPreviousScanHistoryForGathering = (gatheringId: string): ScanDayAnalytics[] => {
-  const key = `gcommunity_scans_analytics_history_prev_${gatheringId}`;
-  const saved = localStorage.getItem(key);
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch (e) {
-      // fallback
-    }
-  }
-
-  // Generate realistic previous 7-day data (days 8 to 14 ago)
-  const total = getQrScansForGathering(gatheringId);
-  const seedNum = parseInt(gatheringId, 10) || 1;
-  const multiplier = 0.8 + (Math.sin(seedNum) * 0.15); // ranges around 0.65 to 0.95
-  const prevTotal = Math.max(5, Math.floor(total * multiplier));
-  
-  const data: ScanDayAnalytics[] = [];
-  const now = new Date();
-  
-  const baseValue = Math.floor(prevTotal / 7);
-  let accumulated = 0;
-  
-  for (let i = 13; i >= 7; i--) {
-    const d = new Date(now);
-    d.setDate(now.getDate() - i);
-    const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    const fullDateStr = d.toISOString().split('T')[0];
-    
-    let count = baseValue;
-    if (i === 7) {
-      count = prevTotal - accumulated;
-      if (count < 0) count = 0;
-    } else {
-      const randomOffset = Math.floor(Math.sin(seedNum + i) * (baseValue * 0.35));
-      count = Math.max(1, baseValue + randomOffset);
-      accumulated += count;
-    }
-    
-    const timestamps: ScanAnalyticsEvent[] = [];
-    for (let j = 0; j < count; j++) {
-      const scanHour = Math.floor(8 + (j * 12) / count) % 24;
-      const scanMin = Math.floor(Math.sin(j + i) * 30 + 30) % 60;
-      const scanSec = Math.floor(Math.cos(j + i) * 30 + 30) % 60;
-      
-      const scanTime = new Date(d);
-      scanTime.setHours(scanHour, scanMin, scanSec);
-      
-      timestamps.push({
-        timestamp: scanTime.getTime(),
-        dateString: fullDateStr,
-        timeString: scanTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-      });
-    }
-
-    timestamps.sort((a, b) => a.timestamp - b.timestamp);
-
-    data.push({
-      date: dateStr,
-      fullDate: fullDateStr,
-      count,
-      timestamps
-    });
-  }
-
-  localStorage.setItem(key, JSON.stringify(data));
-  return data;
-};
-
-export const getYearAgoScanHistoryForGathering = (gatheringId: string): ScanDayAnalytics[] => {
-  const key = `gcommunity_scans_analytics_history_yearago_${gatheringId}`;
-  const saved = localStorage.getItem(key);
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch (e) {
-      // fallback
-    }
-  }
-
-  // Generate realistic 365-days-ago data
-  const total = getQrScansForGathering(gatheringId);
-  const seedNum = parseInt(gatheringId, 10) || 1;
-  const multiplier = 0.7 + (Math.cos(seedNum * 2) * 0.12);
-  const yearAgoTotal = Math.max(3, Math.floor(total * multiplier));
-  
-  const data: ScanDayAnalytics[] = [];
-  const now = new Date();
-  
-  const baseValue = Math.floor(yearAgoTotal / 7);
-  let accumulated = 0;
-  
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(now.getDate() - i - 365);
-    const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    const fullDateStr = d.toISOString().split('T')[0];
-    
-    let count = baseValue;
-    if (i === 0) {
-      count = yearAgoTotal - accumulated;
-      if (count < 0) count = 0;
-    } else {
-      const randomOffset = Math.floor(Math.sin(seedNum * i + 12) * (baseValue * 0.4));
-      count = Math.max(1, baseValue + randomOffset);
-      accumulated += count;
-    }
-    
-    const timestamps: ScanAnalyticsEvent[] = [];
-    for (let j = 0; j < count; j++) {
-      const scanHour = Math.floor(9 + (j * 10) / count) % 24;
-      const scanMin = Math.floor(Math.sin(j + i) * 30 + 30) % 60;
-      const scanSec = Math.floor(Math.cos(j + i) * 30 + 30) % 60;
-      
-      const scanTime = new Date(d);
-      scanTime.setHours(scanHour, scanMin, scanSec);
-      
-      timestamps.push({
-        timestamp: scanTime.getTime(),
-        dateString: fullDateStr,
-        timeString: scanTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-      });
-    }
-
-    timestamps.sort((a, b) => a.timestamp - b.timestamp);
-
-    data.push({
-      date: dateStr,
-      fullDate: fullDateStr,
-      count,
-      timestamps
-    });
-  }
-
-  localStorage.setItem(key, JSON.stringify(data));
-  return data;
-};
-
-export const getScanHistoryForGatheringWithDays = (gatheringId: string, days: number, offsetDays = 0): ScanDayAnalytics[] => {
-  const key = `gcommunity_scans_analytics_history_${gatheringId}_d${days}_o${offsetDays}`;
-  const saved = localStorage.getItem(key);
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch (e) {
-      // fallback
-    }
-  }
-
+const _generateScanHistory = (gatheringId: string, days: number, offsetDays: number = 0, baseDate?: Date): ScanDayAnalytics[] => {
   const totalScans = getQrScansForGathering(gatheringId);
+  const seedNum = parseInt(gatheringId, 10) || 1;
   let periodTotal = totalScans;
 
   if (offsetDays > 0) {
-    // Generate scaled down total for older periods
-    const seedNum = parseInt(gatheringId, 10) || 1;
     const baseMultiplier = offsetDays >= 365 ? 0.7 : 0.85;
     const multiplier = baseMultiplier + (Math.sin(seedNum + offsetDays) * 0.12);
     periodTotal = Math.max(days, Math.floor(totalScans * multiplier * (days / 7)));
-  } else {
-    // The total for the current period should scale based on 'days' relative to 7
-    if (days > 7) {
-      const seedNum = parseInt(gatheringId, 10) || 1;
-      const multiplier = 1.2 + (Math.cos(seedNum) * 0.15); // more days, more scans
-      periodTotal = Math.max(days, Math.floor(totalScans * (days / 7) * multiplier));
-    }
+  } else if (days > 7) {
+    const multiplier = 1.2 + (Math.cos(seedNum) * 0.15);
+    periodTotal = Math.max(days, Math.floor(totalScans * (days / 7) * multiplier));
   }
 
   const data: ScanDayAnalytics[] = [];
@@ -416,20 +190,20 @@ export const getScanHistoryForGatheringWithDays = (gatheringId: string, days: nu
   const baseValue = Math.floor(periodTotal / days);
   let accumulated = 0;
 
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(now.getDate() - i - offsetDays);
+  for (let i = baseDate ? 0 : days - 1; i < (baseDate ? days : -1); baseDate ? i++ : i--) {
+    const d = new Date(baseDate || now);
+    baseDate ? d.setDate(baseDate.getDate() + i) : d.setDate(now.getDate() - i - offsetDays);
     const dateStr = d.toLocaleDateString([], { month: "short", day: "numeric" });
     const fullDateStr = d.toISOString().split("T")[0];
 
     let count = baseValue;
-    if (i === 0) {
+    const isLast = baseDate ? i === days - 1 : i === 0;
+    if (isLast) {
       count = periodTotal - accumulated;
       if (count < 0) count = 0;
     } else {
-      const seedNum = parseInt(gatheringId, 10) || 1;
       const randomOffset = Math.floor(Math.sin(seedNum + i + offsetDays) * (Math.max(1, baseValue) * 0.45));
-      count = Math.max(0, baseValue + randomOffset);
+      count = Math.max(baseDate ? 1 : 0, baseValue + randomOffset);
       accumulated += count;
     }
 
@@ -438,27 +212,49 @@ export const getScanHistoryForGatheringWithDays = (gatheringId: string, days: nu
       const scanHour = Math.floor(8 + (j * 12) / Math.max(1, count)) % 24;
       const scanMin = Math.round(Math.sin(j + i + offsetDays) * 30 + 30) % 60;
       const scanSec = Math.round(Math.cos(j + i + offsetDays) * 30 + 30) % 60;
-
       const scanTime = new Date(d);
       scanTime.setHours(scanHour, scanMin, scanSec);
-
-      timestamps.push({
-        timestamp: scanTime.getTime(),
-        dateString: fullDateStr,
-        timeString: scanTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
-      });
+      timestamps.push({ timestamp: scanTime.getTime(), dateString: fullDateStr, timeString: scanTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }) });
     }
-
     timestamps.sort((a, b) => a.timestamp - b.timestamp);
-
-    data.push({
-      date: dateStr,
-      fullDate: fullDateStr,
-      count,
-      timestamps
-    });
+    data.push({ date: dateStr, fullDate: fullDateStr, count, timestamps });
   }
 
+  return data;
+};
+
+export const getScanHistoryForGathering = (gatheringId: string): ScanDayAnalytics[] => {
+  const key = `gcommunity_scans_analytics_history_${gatheringId}`;
+  const saved = localStorage.getItem(key);
+  if (saved) try { return JSON.parse(saved); } catch (e) {}
+  const data = _generateScanHistory(gatheringId, 7, 0);
+  localStorage.setItem(key, JSON.stringify(data));
+  return data;
+};
+
+export const getPreviousScanHistoryForGathering = (gatheringId: string): ScanDayAnalytics[] => {
+  const key = `gcommunity_scans_analytics_history_prev_${gatheringId}`;
+  const saved = localStorage.getItem(key);
+  if (saved) try { return JSON.parse(saved); } catch (e) {}
+  const data = _generateScanHistory(gatheringId, 7, 7);
+  localStorage.setItem(key, JSON.stringify(data));
+  return data;
+};
+
+export const getYearAgoScanHistoryForGathering = (gatheringId: string): ScanDayAnalytics[] => {
+  const key = `gcommunity_scans_analytics_history_yearago_${gatheringId}`;
+  const saved = localStorage.getItem(key);
+  if (saved) try { return JSON.parse(saved); } catch (e) {}
+  const data = _generateScanHistory(gatheringId, 7, 365);
+  localStorage.setItem(key, JSON.stringify(data));
+  return data;
+};
+
+export const getScanHistoryForGatheringWithDays = (gatheringId: string, days: number, offsetDays = 0): ScanDayAnalytics[] => {
+  const key = `gcommunity_scans_analytics_history_${gatheringId}_d${days}_o${offsetDays}`;
+  const saved = localStorage.getItem(key);
+  if (saved) try { return JSON.parse(saved); } catch (e) {}
+  const data = _generateScanHistory(gatheringId, days, offsetDays);
   localStorage.setItem(key, JSON.stringify(data));
   return data;
 };
@@ -466,69 +262,8 @@ export const getScanHistoryForGatheringWithDays = (gatheringId: string, days: nu
 export const getCustomScanHistoryForGathering = (gatheringId: string, startDateStr: string): ScanDayAnalytics[] => {
   const key = `gcommunity_scans_analytics_history_custom_${gatheringId}_${startDateStr}`;
   const saved = localStorage.getItem(key);
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch (e) {
-      // fallback
-    }
-  }
-
-  // Generate realistic custom 7-day data starting at startDateStr
-  const total = getQrScansForGathering(gatheringId);
-  const seedNum = parseInt(gatheringId, 10) || 1;
-  const multiplier = 0.75 + (Math.sin(seedNum * 3) * 0.1);
-  const customTotal = Math.max(4, Math.floor(total * multiplier));
-  
-  const data: ScanDayAnalytics[] = [];
-  const baseDate = new Date(startDateStr);
-  
-  const baseValue = Math.floor(customTotal / 7);
-  let accumulated = 0;
-  
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(baseDate);
-    d.setDate(baseDate.getDate() + i);
-    const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    const fullDateStr = d.toISOString().split('T')[0];
-    
-    let count = baseValue;
-    if (i === 6) {
-      count = customTotal - accumulated;
-      if (count < 0) count = 0;
-    } else {
-      const idxSeed = i + 4;
-      const randomOffset = Math.floor(Math.sin(seedNum * idxSeed + 7) * (baseValue * 0.38));
-      count = Math.max(1, baseValue + randomOffset);
-      accumulated += count;
-    }
-    
-     const timestamps: ScanAnalyticsEvent[] = [];
-     for (let j = 0; j < count; j++) {
-       const scanHour = Math.floor(9 + (j * 11) / count) % 24;
-       const scanMin = Math.floor(Math.sin(j + i) * 30 + 30) % 60;
-       const scanSec = Math.floor(Math.cos(j + i) * 30 + 30) % 60;
-
-      const scanTime = new Date(d);
-      scanTime.setHours(scanHour, scanMin, scanSec);
-      
-      timestamps.push({
-        timestamp: scanTime.getTime(),
-        dateString: fullDateStr,
-        timeString: scanTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-      });
-    }
-
-    timestamps.sort((a, b) => a.timestamp - b.timestamp);
-
-    data.push({
-      date: dateStr,
-      fullDate: fullDateStr,
-      count,
-      timestamps
-    });
-  }
-
+  if (saved) try { return JSON.parse(saved); } catch (e) {}
+  const data = _generateScanHistory(gatheringId, 7, 0, new Date(startDateStr));
   localStorage.setItem(key, JSON.stringify(data));
   return data;
 };
