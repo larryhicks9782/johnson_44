@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Build artifacts and caches (too large for Git)
+gradle-8.5-bin.zip
+gradle-8.5/
+.gradle/
